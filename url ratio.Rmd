@@ -1,0 +1,48 @@
+---
+title: "URL Ratio"
+author: "Douglas McWherter"
+date: "11/15/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+```
+
+Including URLs in tweets displays a desire to spread information related to the hurricane. We can see how this changes over time for a small subset of data.
+
+```{r analyze, include=FALSE}
+setwd('~/School/Dorian')
+load('dorian_tweet_subsample_500000')
+
+library(tidyverse)
+library(lubridate)
+url_data <- tibble(dates = floor_date(ymd_hms(tweets.from.ids$parsed_created_at), unit = 'day'),
+       has_url = (tweets.from.ids$urls != ''))
+
+df <- tibble(dates = unique(url_data$dates),
+            numT = double(length(unique(url_data$dates))),
+            numF = double(length(unique(url_data$dates))))
+
+for (i in 1:length(unique(url_data$dates))) {
+  d <- url_data[which(url_data$dates == df$dates[i]),]
+  df$numT[i] <- length(d[which(d$has_url == TRUE),]$has_url)
+  df$numF[i] <- length(d[which(d$has_url == FALSE),]$has_url)
+}
+
+url_data <- tibble(Dates = df$dates, Ratio = df$numT / df$numF)
+rm(d, df)
+
+library(ggplot2)
+url_plot <- ggplot(url_data, aes(x=Dates, y=Ratio)) + 
+  geom_line() + 
+  geom_point() + 
+  ggtitle('URL Ratio over Time') + 
+  xlab('Days') + 
+  ylab('Ratio')
+```
+
+```{r plot, echo=FALSE}
+url_plot
+```
