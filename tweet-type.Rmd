@@ -1,0 +1,99 @@
+---
+title: "Tweet Type"
+author: "Douglas McWherter"
+date: "1/23/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+This shows a small analysis based on the types of tweets (retweet, reply, quote, original) seen and changes in absolute and relative amounts over time. As time progresses, more people are seen retweeting to spread information.
+
+***
+
+```{r analyze, include=FALSE, cache=TRUE, cache.lazy=FALSE}
+library(tidyverse)
+tweets.from.ids <- read_csv("~/Documents/recovery-prediction/data/dorian/dorian_tweets.csv")
+
+library(lubridate)
+data <- tibble(dates = floor_date(ymd_hms(tweets.from.ids$parsed_created_at), unit = 'day'),
+               type = tweets.from.ids$tweet_type)
+
+# Get proportions
+len <- length(unique(data$dates))
+wide <- tibble(dates = unique(data$dates), 
+               retweet = double(len), 
+               reply = double(len), 
+               quote = double(len), 
+               original = double(len))
+
+for (i in 1:length(unique(wide$dates))) {
+  d <- data[which(data$dates == wide$dates[i]),]
+  wide$retweet[i] <- length(d[which(d$type == 'retweet'),]$dates)
+  wide$reply[i] <- length(d[which(d$type == 'reply'),]$dates)
+  wide$quote[i] <- length(d[which(d$type == 'quote'),]$dates)
+  wide$original[i] <- length(d[which(d$type == 'original'),]$dates)
+}
+
+library(reshape2)
+long <- melt(wide, id.vars = 'dates', measure.vars = c('retweet', 'reply', 'quote', 'original'))
+names(long) <- c('dates', 'type', 'n')
+
+library(ggplot2)
+stacked <- ggplot(long, aes(x = dates, y = n, group = type, fill = type)) + 
+  geom_area(position = "fill") + 
+  ggtitle('Tweet Breakdown by Day') + 
+  xlab('Days') + ylab('Percentage') + 
+  labs(fill = 'Type')
+
+library(dplyr)
+df_retweet <- select(filter(long, type == 'retweet'), c('dates', 'n'))
+df_reply <- select(filter(long, type == 'reply'), c('dates', 'n'))
+df_quote <- select(filter(long, type == 'quote'), c('dates', 'n'))
+df_original <- select(filter(long, type == 'original'), c('dates', 'n'))
+
+plot_retweet <- ggplot(df_retweet, aes(x = dates, y = n, fill = n)) + 
+  geom_bar(stat = 'identity', show.legend = F) + 
+  ggtitle('Retweets over Time') + 
+  xlab('Days') + ylab('Number of Retweets') + 
+  scale_fill_gradient(low = 'black', high = 'green3')
+
+plot_reply <- ggplot(df_reply, aes(x = dates, y = n, fill = n)) + 
+  geom_bar(stat = 'identity', show.legend = F) + 
+  ggtitle('Replies over Time') + 
+  xlab('Days') + ylab('Number of Replies') + 
+  scale_fill_gradient(low = 'black', high = 'orange2')
+
+plot_quote <- ggplot(df_quote, aes(x = dates, y = n, fill = n)) + 
+  geom_bar(stat = 'identity', show.legend = F) + 
+  ggtitle('Quotes over Time') + 
+  xlab('Days') + ylab('Number of Quotes') + 
+  scale_fill_gradient(low = 'black', high = 'dodgerblue1')
+
+plot_original <- ggplot(df_original, aes(x = dates, y = n, fill = n)) + 
+  geom_bar(stat = 'identity', show.legend = F) + 
+  ggtitle('Originals over Time') + 
+  xlab('Days') + ylab('Number of Originals') + 
+  scale_fill_gradient(low = 'black', high = 'red')
+
+library(ggpubr)
+all_types <- ggarrange(plot_retweet, plot_reply, plot_quote, plot_original)
+```
+
+## Total
+
+This is a stacked plot of how the amounts of each type of tweet change relative to each other.
+
+```{r stacked, echo=FALSE}
+stacked
+```
+
+## Breakdown
+
+This is the breakdown of absolute counts over time.
+
+```{r breakdown, echo=FALSE}
+all_types
+```

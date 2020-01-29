@@ -51,7 +51,7 @@ for(i in 1:(length(tweets.rows)-1)){
   #if less than 15 minutes, wait the duration
   if( Sys.time()-start_time<15){
 	print(paste0("Waiting for: ", 15-(Sys.time()-start_time)))
-	sleep(15-(Sys.time()-start_time))
+	Sys.sleep(15-(Sys.time()-start_time))
   }
 
   print("sleep over")

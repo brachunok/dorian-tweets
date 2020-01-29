@@ -1,0 +1,124 @@
+---
+title: "Tweets per User"
+author: "Douglas McWherter"
+date: "1/23/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+We would expect that a large number of people are tweeting infrequently, and a small handful are tweeting magnitudes more.
+
+```{r analysis, include=FALSE, cache=TRUE, cache.lazy=FALSE}
+library(tidyverse)
+tweets.from.ids <- read_csv("~/Documents/recovery-prediction/data/dorian/dorian_tweets.csv")
+
+library(lubridate)
+data <- tibble(dates = floor_date(ymd_hms(tweets.from.ids$parsed_created_at), unit = 'day'),
+               user = tweets.from.ids$user_id, 
+               type = tweets.from.ids$tweet_type)
+
+data <- data[with(data, order(dates)),]
+
+quarter <- floor(length(data$dates) / 4)
+
+data1 <- data[1:quarter,]
+data2 <- data[(quarter + 1):(2 * quarter),]
+data3 <- data[(2 * quarter + 1):(3 * quarter),]
+data4 <- data[(3 * quarter + 1):length(data$dates),]
+
+unq1 <- count(data1, user = user)
+unq2 <- count(data2, user = user)
+unq3 <- count(data3, user = user)
+unq4 <- count(data4, user = user)
+
+unq1$n <- log(unq1$n)
+unq2$n <- log(unq2$n)
+unq3$n <- log(unq3$n)
+unq4$n <- log(unq4$n)
+
+library(ggplot2)
+plot1 <- ggplot(unq1, aes(x = n)) + 
+  geom_histogram(fill = 'turquoise3') + 
+  ggtitle('First Quarter') + 
+  xlab('# of Tweets') + ylab('Log of Users')
+
+plot2 <- ggplot(unq2, aes(x = n)) + 
+  geom_histogram(fill = 'midnightblue') + 
+  ggtitle('Second Quarter') + 
+  xlab('# of Tweets') + ylab('Log of Users')
+
+plot3 <- ggplot(unq3, aes(x = n)) + 
+  geom_histogram(fill = 'chocolate2') + 
+  ggtitle('Third Quarter') + 
+  xlab('# of Tweets') + ylab('Log of Users')
+
+plot4 <- ggplot(unq4, aes(x = n)) + 
+  geom_histogram(fill = 'mediumorchid2') + 
+  ggtitle('Fourth Quarter') + 
+  xlab('# of Tweets') + ylab('Log of Users')
+
+library(ggpubr)
+quarters <- ggarrange(plot1, plot2, plot3, plot4)
+
+library(dplyr)
+data <- select(filter(data, type != 'retweet'), c('dates', 'user'))
+
+quarter <- floor(length(data$dates) / 4)
+
+data1 <- data[1:quarter,]
+data2 <- data[(quarter + 1):(2 * quarter),]
+data3 <- data[(2 * quarter + 1):(3 * quarter),]
+data4 <- data[(3 * quarter + 1):length(data$dates),]
+
+unq1 <- count(data1, user = user)
+unq2 <- count(data2, user = user)
+unq3 <- count(data3, user = user)
+unq4 <- count(data4, user = user)
+
+unq1$n <- log(unq1$n)
+unq2$n <- log(unq2$n)
+unq3$n <- log(unq3$n)
+unq4$n <- log(unq4$n)
+
+plot1 <- ggplot(unq1, aes(x = n)) + 
+  geom_histogram(fill = 'turquoise3') + 
+  ggtitle('First Quarter') + 
+  xlab('Log # of Tweets') + ylab('# of Users')
+
+plot2 <- ggplot(unq2, aes(x = n)) + 
+  geom_histogram(fill = 'midnightblue') + 
+  ggtitle('Second Quarter') + 
+  xlab('Log # of Tweets') + ylab('# of Users')
+
+plot3 <- ggplot(unq3, aes(x = n)) + 
+  geom_histogram(fill = 'chocolate2') + 
+  ggtitle('Third Quarter') + 
+  xlab('Log # of Tweets') + ylab('# of Users')
+
+plot4 <- ggplot(unq4, aes(x = n)) + 
+  geom_histogram(fill = 'mediumorchid2') + 
+  ggtitle('Fourth Quarter') + 
+  xlab('Log # of Tweets') + ylab('# of Users')
+
+quarters_no_retweets <- ggarrange(plot1, plot2, plot3, plot4)
+
+```
+
+## Plots
+
+Retweets contain a significant portion of the tweets made. To see how these trends change over time, the data set is split into quarters of the total time frame. The first plot contains retweets in the counts and the second does not. Also, due to the size of the data, the plots are of the log of the counts.
+
+#### With Retweets
+```{r with retweets, echo=FALSE}
+quarters
+```
+
+***
+
+#### Without Retweets
+```{r no retweets, echo=FALSE}
+quarters_no_retweets
+```
